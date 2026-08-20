@@ -125,3 +125,39 @@ def write_all(result: ResearchResult, artifact_dir: Path) -> list[Path]:
     plot_cum_pnl(result, paths[1])
     plot_ofi_series(result, paths[2])
     return paths
+
+
+def plot_equity_curve(
+    times_ms,
+    equity,
+    path: Path,
+    *,
+    symbol: str,
+    fee_bps: float,
+    net_pnl: float,
+) -> None:
+    """Paper-replay equity vs exchange time."""
+    _style()
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if times_ms is None or equity is None:
+        return
+    t = np.asarray(times_ms)
+    y = np.asarray(equity, dtype=np.float64)
+    if t.size == 0 or y.size == 0:
+        return
+    ts = pd.to_datetime(t, unit="ms", utc=True)
+    fig, ax = plt.subplots(figsize=(7.2, 4.2))
+    ax.plot(ts, y, color="#1f4e79", lw=1.2, label="equity")
+    ax.axhline(y[0], color="#666", lw=0.6, ls="--", label="start")
+    ax.set_xlabel("Replay (UTC)")
+    ax.set_ylabel("Equity")
+    sign = "+" if net_pnl >= 0 else ""
+    ax.set_title(
+        f"{symbol}  ·  paper equity  ·  taker {fee_bps:.1f} bps  ·  "
+        f"net {sign}{net_pnl:.2f}"
+    )
+    ax.legend(loc="best")
+    fig.autofmt_xdate()
+    fig.savefig(path)
+    plt.close(fig)

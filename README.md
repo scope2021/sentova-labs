@@ -15,7 +15,11 @@ order-flow imbalance (OFI) proxy equal to signed volume. That number is
 correlated with the *forward* last-price return, then run through a
 walk-forward long/short with a fee. One command downloads (or caches) the
 tape, prints a table, and writes `artifacts/report.md` plus a few plots.
-No API keys. No orders. No live trading.
+
+A separate **paper engine** replays the same tape through orders, conservative
+next-print fills, taker fees, risk, and a daily-loss kill switch. That path
+can talk to **Binance spot testnet only** (`testnet.binance.vision`). It will
+refuse `api.binance.com`. It does not withdraw, transfer, or print money.
 
 ## Hypothesis
 
@@ -124,6 +128,61 @@ than the losses; it is nowhere near 4 bp. Last-price 1s bars on a thin
 US-venue tape are a noisy mid proxy, and this is not a trading
 recommendation. Full table, caveats, and figures: `artifacts/report.md`.
 
+## Trading engine
+
+This is a paper / testnet core, not a bot. The research result above still
+stands: **the OFI sign rule does not survive costs.** The engine exists so
+that fills, fees, rejects, and a kill switch are *correct* when someone
+later swaps the signal.
+
+Pipeline (same path for historical replay and paper):
+
+`tape print → bar OFI → sign(OFI) if |OFI| ≥ warmup quantile → risk → broker`
+
+Fill model (deliberately conservative):
+
+- Signal from bar *t* is submitted at bar close.
+- The paper broker will not fill on any print with exchange time before
+  bar end. Same-bar tape cannot fill the signal that bar produced.
+- Fills pay the **next print's price** and a **taker** fee (default 2 bp
+  one-way, ≈ 4 bp round-trip). No mid, no maker rebate, no queue.
+- Order state machine: `new → ack | rejected → partial → filled | canceled`.
+
+Risk (all on, demo-sized): max notional 200, max position 0.002, max order
+qty 0.001, 6 orders / 60s, daily-loss kill at 8 units of cash. Kill
+**flattens** with a reduce-only market order and rejects new risk until
+the next UTC day.
+
+Brokers:
+
+- `PaperBroker` — in-process matcher used by `python -m signed_flow paper`.
+- `BinanceTestnetBroker` — REST base **only** `https://testnet.binance.vision`.
+  Keys from `BINANCE_TESTNET_KEY` / `BINANCE_TESTNET_SECRET`. Missing keys:
+  HMAC signing still unit-tests; live submit raises. Constructor raises
+  `MainnetRefusedError` if the host is not the spot testnet.
+
+### Paper replay (latest run)
+
+Run date: **20 Aug 2026, 21:40 IST** (16:10 UTC). Same 80k `BTCUSDT`
+binance.us tape as the research note. Warmup: first 24,000 prints freeze
+the |OFI| 70% quantile (0.00319). Then the engine trades.
+
+| | |
+|---|---|
+| Fills / rejects / kills | 21,622 / 347 / 5 |
+| Fees paid | 122.11 |
+| Realized (gross of fees) | +7.16 |
+| Net PnL | **−114.95** on 10,000 starting cash |
+| Ending position | flat |
+
+Gross round-trips were slightly positive; **fees and the next-print fill
+model ate them.** Five daily-loss kills flattened the book. Full write-up
+and equity curve: `artifacts/paper_report.md`, `artifacts/paper_equity.png`.
+
+This is not a money printer. A desk would still need an L2 fill model,
+latency budget, exchange reconcile, human-ack kill, restart-safe limits,
+and a signal that actually survives costs — which this one does not.
+
 ## How to run
 
 ```bash
@@ -134,11 +193,18 @@ pip install -r requirements.txt
 python -m signed_flow --help
 python -m signed_flow --symbol BTCUSDT --bars 1 --fee-bps 4 --max-trades 80000
 
+# paper replay (uses data/ cache if present; writes artifacts/paper_report.md)
+python -m signed_flow paper --help
+python -m signed_flow paper --symbol BTCUSDT --bars 1 --fee-bps 2 --order-qty 0.001 --max-trades 80000
+
 pytest -q
 ```
 
 Reruns use `data/*_aggtrades.csv.gz` unless you pass `--refresh`.
-Plots and the research note land in `artifacts/`.
+Research plots land in `artifacts/report.md` + `cum_pnl.png`. Paper replay
+writes `artifacts/paper_report.md` + `paper_equity.png`.
+
+Do **not** point the testnet broker at mainnet. It will refuse.
 
 ## What would make a desk take this seriously next
 
