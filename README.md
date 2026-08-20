@@ -1,4 +1,6 @@
-# Signed Flow
+# Sentova Labs
+
+Order-flow research. Walk-forward, after costs.
 
 A small, reproducible study of whether **aggressive order flow** on a crypto
 spot tape predicts **short-horizon last-price returns**, after a conservative

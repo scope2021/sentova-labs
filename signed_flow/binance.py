@@ -46,7 +46,7 @@ def _session() -> requests.Session:
     s.headers.update(
         {
             "Accept": "application/json",
-            "User-Agent": "signed-flow-research/0.1 (academic; public REST)",
+            "User-Agent": "sentova-labs/0.1 (academic; public REST)",
         }
     )
     return s

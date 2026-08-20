@@ -1,4 +1,4 @@
-# Signed Flow — research note
+# Sentova Labs — research note
 
 Generated: 2026-08-20 15:38 UTC
 
@@ -89,7 +89,7 @@ OFI vs next-bar return is in `ofi_vs_ret.png`.
 ## Stdout table
 
 ```
-Signed Flow — walk-forward test
+Sentova Labs — walk-forward test
 symbol=BTCUSDT  bar=1s  fee=4.0 bps RT  venue=binance.us (cached)
 trades=80,000  bars=2,021,904  active=49,723  train=1,415,332  test=606,572
 sample: 2026-07-28 05:58 UTC → 2026-08-20 15:37 UTC

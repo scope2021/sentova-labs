@@ -228,7 +228,7 @@ def format_table(result: ResearchResult) -> str:
     t0 = datetime.fromtimestamp(result.t0_ms / 1000, tz=timezone.utc)
     t1 = datetime.fromtimestamp(result.t1_ms / 1000, tz=timezone.utc)
     lines = [
-        "Signed Flow — walk-forward test",
+        "Sentova Labs — walk-forward test",
         f"symbol={result.symbol}  bar={result.bar_seconds}s  "
         f"fee={result.fee_bps:.1f} bps RT  venue={result.source}",
         f"trades={result.n_trades:,}  bars={result.n_bars:,}  "
@@ -312,7 +312,7 @@ def write_report(result: ResearchResult, path, extra_notes: list[str] | None = N
     if extra_notes:
         extra = "\n".join(f"- {n}" for n in extra_notes) + "\n\n"
 
-    md = f"""# Signed Flow — research note
+    md = f"""# Sentova Labs — research note
 
 Generated: {now.strftime("%Y-%m-%d %H:%M UTC")}
 

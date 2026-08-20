@@ -21,9 +21,9 @@ def _project_root() -> Path:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        prog="signed_flow",
+        prog="sentova",
         description=(
-            "Order-flow imbalance research lab on public Binance aggTrades. "
+            "Sentova Labs — order-flow imbalance research on public Binance aggTrades. "
             "Research and simulation only — no orders are placed."
         ),
     )
